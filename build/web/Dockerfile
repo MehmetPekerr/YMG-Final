@@ -1,29 +1,31 @@
-# Base image olarak OpenJDK 8 kullanıyoruz
-FROM openjdk:8-jdk
+FROM payara/server-full:5.2022.2-jdk11
 
-# GlassFish sunucusunun 4.1.1 sürümünü indiriyoruz
-ENV GLASSFISH_VERSION 4.1.1
-ENV GLASSFISH_HOME /glassfish
+# Root kullanıcısına geç
+USER root
 
-RUN wget http://download.oracle.com/glassfish/4.1.1/release/glassfish-${GLASSFISH_VERSION}.zip \
-    && unzip glassfish-${GLASSFISH_VERSION}.zip -d / \
-    && mv /glassfish4 ${GLASSFISH_HOME} \
-    && rm glassfish-${GLASSFISH_VERSION}.zip
+# Gerekli dizinleri oluştur
+RUN mkdir -p /tmp/app/WEB-INF/classes
 
-# Proje dosyalarını container'a kopyalıyoruz
-COPY . /usr/src/app
+# Önce kaynak dosyalarını kopyala
+COPY src /tmp/app/src
+COPY WEB-INF /tmp/app/WEB-INF
+COPY *.xhtml /tmp/app/
 
-# Proje dizinine gidiyoruz
-WORKDIR /usr/src/app
+# Java dosyalarını derle
+WORKDIR /tmp/app
+RUN javac -d WEB-INF/classes -cp /opt/payara/appserver/glassfish/modules/jakarta.faces.jar:WEB-INF/lib/* src/java/com/opiframe/managed/*.java
 
-# WAR dosyasını manuel olarak oluşturuyoruz
-RUN jar cvf HelloWeb.war .
+# WAR dosyasını oluştur
+RUN jar cvf jsf-exercise-1.war *.xhtml WEB-INF/
 
-# Oluşturduğumuz WAR dosyasını GlassFish autodeploy dizinine kopyalıyoruz
-RUN cp HelloWeb.war ${GLASSFISH_HOME}/glassfish/domains/domain1/autodeploy/
+# WAR dosyasını autodeploy dizinine kopyala
+RUN cp jsf-exercise-1.war /opt/payara/appserver/glassfish/domains/domain1/autodeploy/
 
-# GlassFish'in HTTP portunu açıyoruz
+# Payara kullanıcısına geri dön
+USER payara
+
+# Portları aç
 EXPOSE 8080 4848
 
-# GlassFish sunucusunu başlatıyoruz
-CMD ["sh", "-c", "${GLASSFISH_HOME}/bin/asadmin start-domain -v"]
+# Payara'yı başlat
+CMD ["asadmin", "start-domain", "--verbose"]

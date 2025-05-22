@@ -1,23 +1,23 @@
-version: '3'
-
 services:
-  glassfish:
+  payara:
     build: .
     ports:
-      - "8090:8080"
+      - "4848:4848"
+    environment:
+      - DEPLOY_DIR=/opt/payara/appserver/glassfish/domains/domain1/autodeploy
     networks:
-      - mynetwork
+      - app_network
 
   nginx:
     image: nginx:latest
     ports:
       - "80:80"
     volumes:
-      - ./nginx.conf:/etc/nginx/conf.d/default.conf
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
     depends_on:
-      - glassfish
+      - payara
     networks:
-      - mynetwork
+      - app_network
 
 networks:
-  mynetwork:
+  app_network:
