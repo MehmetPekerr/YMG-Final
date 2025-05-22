@@ -10,18 +10,14 @@ pipeline {
         
         stage('Build Docker Image') {
             steps {
-                script {
-                    sh 'docker build -t jsf-app .'
-                }
+                bat 'docker build -t jsf-app .'
             }
         }
         
         stage('Deploy') {
             steps {
-                script {
-                    sh 'docker-compose down || true'
-                    sh 'docker-compose up -d'
-                }
+                bat 'docker-compose down || exit 0'
+                bat 'docker-compose up -d'
             }
         }
     }
